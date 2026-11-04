@@ -1,46 +1,25 @@
-import { NextResponse } from 'next/server';
-import { prisma } from '@/lib/prisma';
-import { rateLimit } from '@/server/rate-limit';
-import { z } from 'zod';
+import { STATS, type Stat } from '@/lib/stats';
+import { json, keys, redis } from '@/lib/store';
 
-const entrySchema = z.object({
-  mode: z.literal('speedrun'),
-  nickname: z.string().min(1).max(32),
-  timeLimit: z.number().int().positive(),
-  puzzlesSolved: z.number().int().nonnegative(),
-  totalAttempts: z.number().int().nonnegative(),
-  invalidAttempts: z.number().int().nonnegative(),
-  averageSolveMs: z.number().int().nonnegative()
-});
+export const dynamic = 'force-dynamic';
 
+const TOP = 50;
+
+/** GET /api/leaderboard?stat=single|mo3|ao5 → top players (fastest first). */
 export async function GET(request: Request) {
-  const { searchParams } = new URL(request.url);
-  const limit = Math.min(Number(searchParams.get('limit') ?? 50), 50);
-  const timeLimit = Number(searchParams.get('timeLimit') ?? 60);
-  const entries = await prisma.leaderboardEntry.findMany({
-    where: { mode: 'speedrun', timeLimit },
-    orderBy: [
-      { puzzlesSolved: 'desc' },
-      { averageSolveMs: 'asc' },
-      { createdAt: 'asc' }
-    ],
-    take: limit
-  });
-  return NextResponse.json(entries);
-}
+  const db = redis();
+  if (!db) return json({ error: 'leaderboard not set up' }, 503);
+  const stat = new URL(request.url).searchParams.get('stat') as Stat;
+  if (!STATS.includes(stat)) return json({ error: 'bad stat' }, 400);
 
-export async function POST(request: Request) {
-  const ip = request.headers.get('x-forwarded-for') ?? 'unknown';
-  if (!rateLimit(ip, 5, 60_000)) {
-    return NextResponse.json({ error: 'Too many submissions. Try again soon.' }, { status: 429 });
+  const raw = await db.zrange<(string | number)[]>(keys.board(stat), 0, TOP - 1, { withScores: true });
+  const subs: string[] = [];
+  const scores: number[] = [];
+  for (let i = 0; i < raw.length; i += 2) {
+    subs.push(String(raw[i]));
+    scores.push(Number(raw[i + 1]));
   }
-  const data = await request.json();
-  const parsed = entrySchema.safeParse(data);
-  if (!parsed.success) {
-    return NextResponse.json({ error: parsed.error.flatten() }, { status: 400 });
-  }
-  const entry = await prisma.leaderboardEntry.create({
-    data: parsed.data
-  });
-  return NextResponse.json(entry, { status: 201 });
+  const names = subs.length ? await db.mget<(string | null)[]>(...subs.map(keys.user)) : [];
+  const entries = subs.map((_, i) => ({ name: names[i] ?? '?', ms: scores[i] }));
+  return json({ entries }, 200, { 'Cache-Control': 's-maxage=10, stale-while-revalidate=30' });
 }

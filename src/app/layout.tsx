@@ -1,27 +1,28 @@
-import type { Metadata } from 'next';
+import type { Metadata, Viewport } from 'next';
+import { DM_Serif_Display, Inter } from 'next/font/google';
+import type { ReactNode } from 'react';
 import './globals.css';
-import { ReactNode } from 'react';
+
+const ui = Inter({ subsets: ['latin'], variable: '--font-ui' });
+const serif = DM_Serif_Display({ subsets: ['latin'], weight: '400', variable: '--font-serif' });
+
+const description = 'The hardest 24 game. Make 24 from four numbers with + − × ÷.';
 
 export const metadata: Metadata = {
-  title: '24 Game',
-  description: 'Make 24 from four numbers using +, −, ×, ÷.',
-  openGraph: {
-    title: '24 Game',
-    description: 'Make 24 from four numbers using +, −, ×, ÷.',
-    type: 'website',
-  },
+  metadataBase: new URL('https://hard24.vercel.app'),
+  title: 'twentyfour',
+  description,
+  manifest: '/manifest.json',
+  icons: { icon: '/icon.svg', apple: '/apple-icon.png' },
+  openGraph: { title: 'twentyfour', description, type: 'website' },
 };
+
+export const viewport: Viewport = { themeColor: '#0b0b0c' };
 
 export default function RootLayout({ children }: { children: ReactNode }) {
   return (
-    <html lang="en" className="dark">
-      <head>
-        <link rel="manifest" href="/manifest.json" />
-        <meta name="theme-color" content="#dc2626" />
-      </head>
-      <body>
-        {children}
-      </body>
+    <html lang="en" className={`${ui.variable} ${serif.variable}`}>
+      <body>{children}</body>
     </html>
   );
 }

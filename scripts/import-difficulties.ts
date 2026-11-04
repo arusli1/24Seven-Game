@@ -1,7 +1,6 @@
-import { writeFileSync, readFileSync } from 'fs';
+import { writeFileSync } from 'fs';
 import path from 'path';
 import { parse } from 'node-html-parser';
-import { PrismaClient } from '@prisma/client';
 
 const SOURCE_URL = 'https://www.4nums.com/game/difficulties/';
 
@@ -64,13 +63,6 @@ function extractFromHtml(html: string) {
   return [];
 }
 
-function mapTier(score: number) {
-  if (score < 160) return 'Easy';
-  if (score < 260) return 'Medium';
-  if (score < 420) return 'Hard';
-  return 'Expert';
-}
-
 async function main() {
   let dataset: { nums: number[]; difficulty: number; solveRate?: number }[] = [];
   try {
@@ -84,41 +76,13 @@ async function main() {
   }
 
   if (dataset.length === 0) {
-    console.warn('Falling back to bundled sample dataset.');
-    const fallback = JSON.parse(readFileSync(path.join(process.cwd(), 'data', 'difficulties.sample.json'), 'utf-8'));
-    dataset = fallback.puzzles;
+    console.warn('No puzzles fetched; keeping existing data/difficulties.json.');
+    return;
   }
 
   const targetPath = path.join(process.cwd(), 'data', 'difficulties.json');
   writeFileSync(targetPath, JSON.stringify({ puzzles: dataset }, null, 2));
   console.log(`Saved ${dataset.length} puzzles to ${targetPath}`);
-
-  if (process.env.DATABASE_URL) {
-    const prisma = new PrismaClient();
-    for (const puzzle of dataset) {
-      const id = puzzle.nums.join('-');
-      await prisma.puzzle.upsert({
-        where: { id },
-        update: {
-          numbers: JSON.stringify(puzzle.nums),
-          difficulty: Math.round(puzzle.difficulty),
-          tier: mapTier(puzzle.difficulty),
-          solveRate: puzzle.solveRate ?? null,
-          solutions: null
-        },
-        create: {
-          id,
-          numbers: JSON.stringify(puzzle.nums),
-          difficulty: Math.round(puzzle.difficulty),
-          tier: mapTier(puzzle.difficulty),
-          solveRate: puzzle.solveRate ?? null,
-          solutions: null
-        }
-      });
-    }
-    console.log('Cached puzzles in SQLite.');
-    await prisma.$disconnect();
-  }
 }
 
 main().catch((error) => {
