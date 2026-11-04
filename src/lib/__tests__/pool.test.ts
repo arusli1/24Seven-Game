@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
-import { POOL_STYLES, puzzleStream, STYLE_WEIGHTS } from '../pool';
+import pool from '../../../data/pool.json';
+import { dealCount, POOL_STYLES, puzzleStream, STYLE_WEIGHTS } from '../pool';
 import { distinctSolutions } from '../solutions';
 import { analyze } from '../analyze';
 
@@ -18,6 +19,24 @@ describe('pool', () => {
       seen.add([...a(i)].sort((x, y) => x - y).join());
     }
     expect(seen.size).toBe(100);
+  });
+});
+
+describe('dealCount', () => {
+  const { puzzles, styles } = pool as { puzzles: number[][]; styles: Record<string, number[]> };
+  const inStyle = (style: string, nums: number[]) => {
+    const key = [...nums].sort((a, b) => a - b).join();
+    return styles[style].some((i) => [...puzzles[i]].sort((a, b) => a - b).join() === key);
+  };
+
+  it('deals one easy, one medium and one hard, deterministically', () => {
+    for (const seed of [1, 2, 3, 42, 999]) {
+      const hand = dealCount(seed);
+      expect(dealCount(seed)).toEqual(hand);
+      expect(hand).toHaveLength(3);
+      expect(hand.filter((n) => inStyle('easy', n))).toHaveLength(1);
+      expect(hand.filter((n) => inStyle('classic-mid', n))).toHaveLength(1);
+    }
   });
 });
 

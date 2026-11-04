@@ -21,8 +21,7 @@ export const STYLE_WEIGHTS: Record<string, number> = {
 export type Numbers = [number, number, number, number];
 
 const { puzzles, styles } = pool as { puzzles: number[][]; styles: Record<string, number[]> };
-const entries = Object.entries(STYLE_WEIGHTS);
-const totalWeight = entries.reduce((sum, [, w]) => sum + w, 0);
+const entries = Object.entries(STYLE_WEIGHTS) as [string, number][];
 
 export const POOL_STYLES = Object.keys(styles);
 
@@ -42,35 +41,60 @@ export function randomSeed() {
   return Math.floor(Math.random() * 2 ** 32);
 }
 
-/** A deterministic, endless stream of puzzles for a seed, without early repeats. */
+type Weights = [style: string, weight: number][];
+
+/** Draw one puzzle from weighted styles, avoiding `used`, with its numbers shuffled. */
+function drawFrom(next: () => number, weights: Weights, used: Set<number>): Numbers {
+  const total = weights.reduce((sum, [, w]) => sum + w, 0);
+  for (let tries = 0; ; tries++) {
+    let r = next() * total;
+    let style = weights[weights.length - 1][0];
+    for (const [id, w] of weights) {
+      if ((r -= w) < 0) { style = id; break; }
+    }
+    const options = styles[style];
+    const index = options[Math.floor(next() * options.length)];
+    if (used.has(index) && tries < 20) continue;
+    used.add(index);
+    // Shuffle so a set doesn't always appear in sorted order.
+    const shuffled = [...puzzles[index]] as Numbers;
+    for (let i = 3; i > 0; i--) {
+      const j = Math.floor(next() * (i + 1));
+      [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
+    }
+    return shuffled;
+  }
+}
+
+/** A deterministic, endless stream of puzzles for a seed (zen), without early repeats. */
 export function puzzleStream(seed: number) {
   const next = rng(seed);
   const used = new Set<number>();
   const list: Numbers[] = [];
-
-  const draw = (): Numbers => {
-    for (let tries = 0; ; tries++) {
-      let r = next() * totalWeight;
-      let style = entries[entries.length - 1][0];
-      for (const [id, w] of entries) {
-        if ((r -= w) < 0) { style = id; break; }
-      }
-      const options = styles[style];
-      const index = options[Math.floor(next() * options.length)];
-      if (used.has(index) && tries < 20) continue;
-      used.add(index);
-      // Shuffle so a set doesn't always appear in sorted order.
-      const shuffled = [...puzzles[index]] as Numbers;
-      for (let i = 3; i > 0; i--) {
-        const j = Math.floor(next() * (i + 1));
-        [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
-      }
-      return shuffled;
-    }
-  };
-
   return (index: number): Numbers => {
-    while (list.length <= index) list.push(draw());
+    while (list.length <= index) list.push(drawFrom(next, entries, used));
     return list[index];
   };
+}
+
+/**
+ * Count deals: one easy, one medium, one hard, in random order. Easy and
+ * medium come from real 4nums solve rates; hard uses the hard styles at
+ * their usual weights. Deterministic for a seed so the server can verify.
+ */
+const DEAL_TIERS: Weights[] = [
+  [['easy', 1]],
+  [['classic-mid', 1]],
+  entries.filter(([id]) => !['easy', 'classic-mid', 'wide'].includes(id)),
+];
+
+export function dealCount(seed: number): Numbers[] {
+  const next = rng(seed);
+  const used = new Set<number>();
+  const hand = DEAL_TIERS.map((tier) => drawFrom(next, tier, used));
+  for (let i = hand.length - 1; i > 0; i--) {
+    const j = Math.floor(next() * (i + 1));
+    [hand[i], hand[j]] = [hand[j], hand[i]];
+  }
+  return hand;
 }

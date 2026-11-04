@@ -1,5 +1,5 @@
 import { currentSub } from '@/lib/auth';
-import { puzzleStream } from '@/lib/pool';
+import { dealCount } from '@/lib/pool';
 import { currentStats, HISTORY, STATS } from '@/lib/stats';
 import { json, keys, redis, RUN_TTL_SECONDS, type RunRecord } from '@/lib/store';
 import { verifyRun } from '@/lib/verify';
@@ -20,7 +20,8 @@ export async function POST(request: Request) {
     return json({ error: 'already finished' }, 409);
   }
 
-  const outcome = verifyRun(body.results, puzzleStream(run.seed), run.start, now);
+  const hand = dealCount(run.seed);
+  const outcome = verifyRun(body.results, (i) => hand[i], run.start, now);
   if ('error' in outcome) return json(outcome, 400);
 
   await db.lpush(keys.recent(sub), outcome.ms);

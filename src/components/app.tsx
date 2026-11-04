@@ -9,7 +9,7 @@ import { post, useAccount } from './use-account';
 import { UsernameDialog } from './username-dialog';
 import { isSolved, newBoard, type BoardState } from '@/lib/board';
 import { COUNT_PUZZLES, type Kind } from '@/lib/modes';
-import { puzzleStream, randomSeed, type Numbers } from '@/lib/pool';
+import { dealCount, puzzleStream, randomSeed, type Numbers } from '@/lib/pool';
 import { distinctSolutions } from '@/lib/solutions';
 
 const ZEN_ADVANCE_MS = 350;
@@ -95,8 +95,7 @@ export function App() {
       }
       if (token !== runToken.current) return;
     }
-    const at = puzzleStream(seed);
-    const puzzles = Array.from({ length: COUNT_PUZZLES }, (_, i) => at(i));
+    const puzzles = dealCount(seed);
     setRun({
       id,
       offline,

@@ -1,6 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { verifyMoves, type Move } from '@/lib/board';
-import { puzzleStream } from '@/lib/pool';
+import { dealCount } from '@/lib/pool';
 
 /** Minimal in-memory stand-in for the Upstash commands the routes use. */
 class FakeRedis {
@@ -62,8 +62,8 @@ function findMoves(nums: number[]): Move[] {
 async function playRun(seconds: number[]) {
   vi.setSystemTime(1_000_000);
   const { id, seed } = await (await startRun()).json();
-  const at = puzzleStream(seed);
-  const results = [0, 1, 2].map((i) => ({ moves: findMoves(at(i)), t: seconds[i] * 1000 }));
+  const hand = dealCount(seed);
+  const results = [0, 1, 2].map((i) => ({ moves: findMoves(hand[i]), t: seconds[i] * 1000 }));
   vi.setSystemTime(1_000_000 + Math.max(...seconds) * 1000 + 200);
   return finishRun(req({ id, results }));
 }
@@ -112,8 +112,8 @@ describe('ranked flow', () => {
     await claimName(req({ name: 'andrew' }));
     vi.setSystemTime(1_000_000);
     const { id, seed } = await (await startRun()).json();
-    const at = puzzleStream(seed);
-    const results = [0, 1, 2].map((i) => ({ moves: findMoves(at(i)), t: (i + 1) * 3000 }));
+    const hand = dealCount(seed);
+    const results = [0, 1, 2].map((i) => ({ moves: findMoves(hand[i]), t: (i + 1) * 3000 }));
     vi.setSystemTime(1_010_000);
     sub = 'google-2';
     expect((await finishRun(req({ id, results }))).status).toBe(404);
