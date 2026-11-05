@@ -26,9 +26,10 @@ interface Props {
   disabled?: boolean;
 }
 
-/** Shrink long numbers and fractions so they fit their card. */
-function sizeClass(text: string) {
-  return text.length > 6 ? 'size-s' : text.length > 3 ? 'size-m' : '';
+/** Shrink long numbers so they fit their card. A fraction is stacked, so its widest line counts. */
+function sizeClass(n: number, d: number) {
+  const len = Math.max(`${n}`.length, d === 1 ? 0 : `${d}`.length);
+  return len > 4 ? 'size-s' : len > 3 ? 'size-m' : '';
 }
 
 /**
@@ -117,7 +118,7 @@ export function Board({ state, onChange, disabled }: Props) {
             <button
               key={c.id}
               tabIndex={-1}
-              className={`card ${c.suit % 2 ? 'is-red' : ''} ${sel === slot ? 'is-selected' : ''} ${sizeClass(d === 1 ? `${n}` : `${n}/${d}`)}`}
+              className={`card ${c.suit % 2 ? 'is-red' : ''} ${sel === slot ? 'is-selected' : ''} ${sizeClass(n, d)}`}
               style={tilt(c.id)}
               onPointerDown={press(() => pick(slot))}
             >

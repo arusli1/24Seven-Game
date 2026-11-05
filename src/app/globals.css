@@ -301,7 +301,7 @@ kbd {
   background: radial-gradient(ellipse at 50% 45%, #f1ede5 0%, #e3ded3 45%, #cdc6b8 100%);
   color: var(--ink);
   font-family: var(--font-card);
-  font-size: clamp(2rem, 9vw, 3.4rem);
+  font-size: clamp(2.6rem, 11vw, 4.2rem);
   font-variant-numeric: lining-nums tabular-nums;
   box-shadow:
     0 1px 1px rgb(0 0 0 / 0.5),
@@ -357,11 +357,11 @@ kbd {
 }
 
 .card.size-m {
-  font-size: clamp(1.4rem, 6vw, 2.4rem);
+  font-size: clamp(1.9rem, 8vw, 3rem);
 }
 
 .card.size-s {
-  font-size: clamp(1.05rem, 4.5vw, 1.7rem);
+  font-size: clamp(1.4rem, 6vw, 2.2rem);
 }
 
 @media (hover: hover) {
@@ -392,8 +392,8 @@ kbd {
   display: inline-flex;
   flex-direction: column;
   align-items: center;
-  font-size: 0.6em;
-  line-height: 1.05;
+  font-size: 0.8em;
+  line-height: 1;
 }
 
 .frac-bar {
@@ -642,7 +642,9 @@ kbd {
     gap: 12px 14px;
     max-width: 290px;
   }
-  .card { font-size: 3.4rem; }
+  .card { font-size: 4.4rem; }
+  .card.size-m { font-size: 3.2rem; }
+  .card.size-s { font-size: 2.3rem; }
   .pip { font-size: 0.8rem; }
   .pip.tl { top: 5px; left: 6px; }
   .pip.br { bottom: 5px; right: 6px; }
