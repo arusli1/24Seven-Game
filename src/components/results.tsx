@@ -38,7 +38,7 @@ export function Results({
       )}
       {note && <div className="muted note">{note}</div>}
       <button className="link again" onClick={onRestart}>
-        again <kbd>→</kbd>
+        again <kbd>return</kbd>
       </button>
     </div>
   );

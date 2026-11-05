@@ -17,7 +17,7 @@ Keys:
 | `j k l ;` (or `+ - * /`) | + − × ÷ |
 | `space` / `backspace` / `delete` | undo |
 | `esc` | clear selection |
-| `→` | zen: next puzzle · count: next puzzle in the run, or start |
+| `return` / `→` | zen: next puzzle · count: next puzzle in the run, or start |
 | `←` | zen: previous puzzle · count: previous puzzle in the run |
 | `↑` | count: new run |
 | `?` | zen: show solutions |

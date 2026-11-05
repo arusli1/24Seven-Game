@@ -216,7 +216,7 @@ export function App() {
   /**
    * App-level keys. Only arrows change the puzzle or run, so nothing else can
    * throw away work. Card, operator and undo keys live in Board.
-   *   →  zen: next · count: next puzzle in the run, or start
+   *   → / return  zen: next · count: next puzzle in the run, or start
    *   ←  zen: previous · count: previous puzzle in the run
    *   ↑  count: restart the run
    *   ?  zen: show solutions
@@ -225,7 +225,8 @@ export function App() {
   keyRef.current = (e) => {
     if (e.metaKey || e.ctrlKey || e.altKey) return;
     setMouseActive(false);
-    const k = e.key;
+    // Return works as "next" (same as →), so play never leaves the home row.
+    const k = e.key === 'Enter' ? 'ArrowRight' : e.key;
     if (dialog || mustPickName) {
       if (k === 'Escape' && !mustPickName) setDialog(null);
       return;
@@ -346,7 +347,7 @@ export function App() {
           </>
         ) : (
           <button className="ready accent" onClick={() => void begin()}>
-            start <kbd>→</kbd>
+            start <kbd>return</kbd>
           </button>
         )}
       </main>
@@ -357,11 +358,13 @@ export function App() {
         <span><kbd>space</kbd> undo</span>
         {kind === 'zen' ? (
           <>
+            <span><kbd>return</kbd> next</span>
             <span><kbd>←</kbd> <kbd>→</kbd> puzzles</span>
             <span><kbd>?</kbd> solutions</span>
           </>
         ) : (
           <>
+            <span><kbd>return</kbd> next</span>
             <span><kbd>←</kbd> <kbd>→</kbd> switch</span>
             <span><kbd>↑</kbd> new run</span>
           </>
