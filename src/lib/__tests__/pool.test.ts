@@ -38,6 +38,16 @@ describe('dealCount', () => {
       expect(hand.filter((n) => inStyle('classic-mid', n))).toHaveLength(1);
     }
   });
+
+  it('size 1 deals a single hard puzzle', () => {
+    const hard = Object.keys(styles).filter((s) => !['easy', 'classic-mid', 'wide'].includes(s));
+    for (const seed of [1, 2, 3, 42, 999]) {
+      const hand = dealCount(seed, 1);
+      expect(dealCount(seed, 1)).toEqual(hand);
+      expect(hand).toHaveLength(1);
+      expect(hard.some((s) => inStyle(s, hand[0]))).toBe(true);
+    }
+  });
 });
 
 describe('analyze', () => {

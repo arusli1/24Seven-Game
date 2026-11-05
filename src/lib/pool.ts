@@ -78,7 +78,8 @@ export function puzzleStream(seed: number) {
 }
 
 /**
- * Count deals: one easy, one medium, one hard, in random order. Easy and
+ * Count deals. Size 3: one easy, one medium, one hard, in random order.
+ * Size 1: one hard. Easy and
  * medium come from real 4nums solve rates; hard uses the hard styles at
  * their usual weights. Deterministic for a seed so the server can verify.
  */
@@ -88,10 +89,11 @@ const DEAL_TIERS: Weights[] = [
   entries.filter(([id]) => !['easy', 'classic-mid', 'wide'].includes(id)),
 ];
 
-export function dealCount(seed: number): Numbers[] {
+export function dealCount(seed: number, size: 3 | 1 = 3): Numbers[] {
   const next = rng(seed);
   const used = new Set<number>();
-  const hand = DEAL_TIERS.map((tier) => drawFrom(next, tier, used));
+  const tiers = size === 1 ? DEAL_TIERS.slice(2) : DEAL_TIERS;
+  const hand = tiers.map((tier) => drawFrom(next, tier, used));
   for (let i = hand.length - 1; i > 0; i--) {
     const j = Math.floor(next() * (i + 1));
     [hand[i], hand[j]] = [hand[j], hand[i]];

@@ -1,3 +1,4 @@
+import { isSize } from '@/lib/modes';
 import { STATS, type Stat } from '@/lib/stats';
 import { json, keys, redis } from '@/lib/store';
 
@@ -5,14 +6,16 @@ export const dynamic = 'force-dynamic';
 
 const TOP = 50;
 
-/** GET /api/leaderboard?stat=single|mo3|ao5 → top players (fastest first). */
+/** GET /api/leaderboard?stat=single|mo3|ao5&size=3|1 → top players (fastest first). */
 export async function GET(request: Request) {
   const db = redis();
   if (!db) return json({ error: 'leaderboard not set up' }, 503);
-  const stat = new URL(request.url).searchParams.get('stat') as Stat;
-  if (!STATS.includes(stat)) return json({ error: 'bad stat' }, 400);
+  const params = new URL(request.url).searchParams;
+  const stat = params.get('stat') as Stat;
+  const size = Number(params.get('size') ?? 3);
+  if (!STATS.includes(stat) || !isSize(size)) return json({ error: 'bad request' }, 400);
 
-  const raw = await db.zrange<(string | number)[]>(keys.board(stat), 0, TOP - 1, { withScores: true });
+  const raw = await db.zrange<(string | number)[]>(keys.board(stat, size), 0, TOP - 1, { withScores: true });
   const subs: string[] = [];
   const scores: number[] = [];
   for (let i = 0; i < raw.length; i += 2) {

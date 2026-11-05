@@ -20,21 +20,23 @@ export async function POST(request: Request) {
     return json({ error: 'already finished' }, 409);
   }
 
-  const hand = dealCount(run.seed);
-  const outcome = verifyRun(body.results, (i) => hand[i], run.start, now);
+  const size = run.size ?? 3;
+  const hand = dealCount(run.seed, size);
+  const outcome = verifyRun(body.results, (i) => hand[i], run.start, now, size);
   if ('error' in outcome) return json(outcome, 400);
 
-  await db.lpush(keys.recent(sub), outcome.ms);
-  await db.ltrim(keys.recent(sub), 0, HISTORY - 1);
-  const recent = (await db.lrange<number>(keys.recent(sub), 0, HISTORY - 1)).map(Number);
+  const recentKey = keys.recent(sub, size);
+  await db.lpush(recentKey, outcome.ms);
+  await db.ltrim(recentKey, 0, HISTORY - 1);
+  const recent = (await db.lrange<number>(recentKey, 0, HISTORY - 1)).map(Number);
   const current = currentStats(recent);
 
   // Each board keeps every player's best (lowest) value for that stat.
   const pbs: Record<string, number | null> = {};
   for (const stat of STATS) {
     const value = current[stat];
-    if (value !== undefined) await db.zadd(keys.board(stat), { lt: true }, { score: value, member: sub });
-    pbs[stat] = await db.zscore(keys.board(stat), sub);
+    if (value !== undefined) await db.zadd(keys.board(stat, size), { lt: true }, { score: value, member: sub });
+    pbs[stat] = await db.zscore(keys.board(stat, size), sub);
   }
   return json({ ms: outcome.ms, current, pbs });
 }

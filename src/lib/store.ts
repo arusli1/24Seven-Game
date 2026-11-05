@@ -1,4 +1,5 @@
 import { Redis } from '@upstash/redis';
+import type { Size } from './modes';
 import type { Stat } from './stats';
 
 /**
@@ -6,12 +7,12 @@ import type { Stat } from './stats';
  * in which case ranked play and the leaderboard are simply hidden.
  *
  * Keys:
- *   run:<id>          a ranked run in progress { sub, seed, start }
+ *   run:<id>          a ranked run in progress { sub, seed, start, size }
  *   run:<id>:done     set once (NX) so a run is scored only once
  *   user:<sub>        username for a Google account
  *   uname:<name>      owner (sub) of a username
- *   recent:<sub>      last few run times, newest first
- *   board:<stat>      sorted set of each player's best, by sub
+ *   recent:<sub>      last few 3-puzzle run times, newest first (recent1: for 1-puzzle)
+ *   board:<stat>      sorted set of each player's best, by sub (board1: for 1-puzzle)
  */
 let client: Redis | null | undefined;
 
@@ -27,6 +28,8 @@ export interface RunRecord {
   sub: string;
   seed: number;
   start: number;
+  /** Missing on runs started before 1-puzzle count existed. */
+  size?: Size;
 }
 
 export const RUN_TTL_SECONDS = 60 * 60;
@@ -36,8 +39,8 @@ export const keys = {
   runDone: (id: string) => `run:${id}:done`,
   user: (sub: string) => `user:${sub}`,
   uname: (name: string) => `uname:${name}`,
-  recent: (sub: string) => `recent:${sub}`,
-  board: (stat: Stat) => `board:${stat}`,
+  recent: (sub: string, size: Size = 3) => `recent${size === 1 ? '1' : ''}:${sub}`,
+  board: (stat: Stat, size: Size = 3) => `board${size === 1 ? '1' : ''}:${stat}`,
 };
 
 /** Lowercase so "Andrew" and "andrew" can't be two people. */

@@ -61,7 +61,7 @@ function findMoves(nums: number[]): Move[] {
 
 async function playRun(seconds: number[]) {
   vi.setSystemTime(1_000_000);
-  const { id, seed } = await (await startRun()).json();
+  const { id, seed } = await (await startRun(req())).json();
   const hand = dealCount(seed);
   const results = [0, 1, 2].map((i) => ({ moves: findMoves(hand[i]), t: seconds[i] * 1000 }));
   vi.setSystemTime(1_000_000 + Math.max(...seconds) * 1000 + 200);
@@ -76,11 +76,11 @@ describe('ranked flow', () => {
 
   it('needs sign-in and a username before ranked runs', async () => {
     sub = null;
-    expect((await startRun()).status).toBe(401);
+    expect((await startRun(req())).status).toBe(401);
     sub = 'google-1';
-    expect((await startRun()).status).toBe(409);
+    expect((await startRun(req())).status).toBe(409);
     expect(await (await claimName(req({ name: 'andrew' }))).json()).toEqual({ username: 'andrew' });
-    expect((await startRun()).status).toBe(200);
+    expect((await startRun(req())).status).toBe(200);
   });
 
   it('usernames are unique', async () => {
@@ -107,11 +107,28 @@ describe('ranked flow', () => {
     expect(mine).toMatchObject({ signedIn: true, username: 'andrew', pbs: { single: 18_000 } });
   });
 
+  it('1-puzzle runs deal one hard puzzle and rank on their own board', async () => {
+    sub = 'google-1';
+    await claimName(req({ name: 'andrew' }));
+    vi.setSystemTime(1_000_000);
+    const { id, seed } = await (await startRun(req({ size: 1 }))).json();
+    const hand = dealCount(seed, 1);
+    expect(hand).toHaveLength(1);
+    vi.setSystemTime(1_007_000);
+    const res = await finishRun(req({ id, results: [{ moves: findMoves(hand[0]), t: 7000 }] }));
+    expect(res.status).toBe(200);
+    const one = await (await board(new Request('http://x/api/leaderboard?stat=single&size=1'))).json();
+    expect(one.entries).toEqual([{ name: 'andrew', ms: 7000 }]);
+    const three = await (await board(new Request('http://x/api/leaderboard?stat=single'))).json();
+    expect(three.entries).toEqual([]);
+    expect((await startRun(req({ size: 2 }))).status).toBe(400);
+  });
+
   it('a run counts once and only for its owner', async () => {
     sub = 'google-1';
     await claimName(req({ name: 'andrew' }));
     vi.setSystemTime(1_000_000);
-    const { id, seed } = await (await startRun()).json();
+    const { id, seed } = await (await startRun(req())).json();
     const hand = dealCount(seed);
     const results = [0, 1, 2].map((i) => ({ moves: findMoves(hand[i]), t: (i + 1) * 3000 }));
     vi.setSystemTime(1_010_000);

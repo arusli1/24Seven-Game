@@ -9,7 +9,7 @@ import { post, useAccount } from './use-account';
 import { UsernameDialog } from './username-dialog';
 import { HelpDialog } from './help-dialog';
 import { isSolved, newBoard, type BoardState } from '@/lib/board';
-import { COUNT_PUZZLES, type Kind } from '@/lib/modes';
+import { SIZES, type Kind, type Size } from '@/lib/modes';
 import { dealCount, puzzleStream, randomSeed, type Numbers } from '@/lib/pool';
 import { distinctSolutions } from '@/lib/solutions';
 
@@ -41,6 +41,8 @@ interface Zen { entries: ZenEntry[]; idx: number }
 
 export function App() {
   const [kind, setKind] = useState<Kind>('zen');
+  /** count: 3 puzzles (easy, medium, hard) or 1 hard one. */
+  const [size, setSize] = useState<Size>(3);
   const [phase, setPhase] = useState<Phase>('ready');
   const [run, setRunState] = useState<Run | null>(null);
   /** Final time of the last count run, plus its ranked stats once verified. */
@@ -100,13 +102,13 @@ export function App() {
     let offline: string | null = null;
     if (account.signedIn && account.username) {
       try {
-        ({ id, seed } = await post<{ id: string; seed: number }>('/api/run', undefined, 2500));
+        ({ id, seed } = await post<{ id: string; seed: number }>('/api/run', { size }, 2500));
       } catch (e) {
         offline = (e as Error).message;
       }
       if (token !== runToken.current) return;
     }
-    const puzzles = dealCount(seed);
+    const puzzles = dealCount(seed, size);
     setRun({
       id,
       offline,
@@ -219,6 +221,11 @@ export function App() {
     toReady(k);
   };
 
+  const chooseSize = (s: Size) => {
+    setSize(s);
+    toReady('count');
+  };
+
   /* ----- keys ----- */
 
   /** Signed in for the first time: a username is needed before anything else. */
@@ -305,6 +312,15 @@ export function App() {
             {k}
           </button>
         ))}
+        {kind === 'count' && (
+          <span className="sizes">
+            {SIZES.map((s) => (
+              <button key={s} className={`link ${size === s ? 'is-active' : ''}`} onClick={() => chooseSize(s)}>
+                {s}
+              </button>
+            ))}
+          </span>
+        )}
       </nav>
 
       <main className="stage">
@@ -340,7 +356,7 @@ export function App() {
         ) : phase === 'play' && run ? (
           <>
             <div className="status">
-              <div className="hand-tabs" role="tablist" aria-label="this run's puzzles">
+              {run.puzzles.length > 1 ? <div className="hand-tabs" role="tablist" aria-label="this run's puzzles">
                 {run.puzzles.map((_, i) => (
                   <button
                     key={i}
@@ -353,7 +369,7 @@ export function App() {
                     {i + 1}{run.done[i] && ' ✓'}
                   </button>
                 ))}
-              </div>
+              </div> : <span />}
               <Clock startedAt={run.startedAt} />
             </div>
             <Board key={`run-${run.idx}`} state={run.boards[run.idx]} onChange={onRunBoard} disabled={overlay} />
@@ -378,15 +394,19 @@ export function App() {
           </>
         ) : (
           <>
-            <span><kbd>return</kbd> next</span>
-            <span><kbd>shift</kbd> <kbd>return</kbd> back</span>
+            {size > 1 && (
+              <>
+                <span><kbd>return</kbd> next</span>
+                <span><kbd>shift</kbd> <kbd>return</kbd> back</span>
+              </>
+            )}
             <span><kbd>↑</kbd> new run</span>
           </>
         )}
       </footer>
 
       {dialog === 'help' && !mustPickName && <HelpDialog onClose={() => setDialog(null)} />}
-      {dialog === 'leaderboard' && <Leaderboard me={account.username} onClose={() => setDialog(null)} />}
+      {dialog === 'leaderboard' && <Leaderboard me={account.username} initialSize={size} onClose={() => setDialog(null)} />}
       {(mustPickName || dialog === 'name') && (
         <UsernameDialog
           current={account.username}

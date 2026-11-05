@@ -1,5 +1,5 @@
 import { verifyMoves, type Move } from './board';
-import { COUNT_PUZZLES } from './modes';
+import type { Size } from './modes';
 import type { Numbers } from './pool';
 
 /** One puzzle of a ranked run: the moves that solved it, at t ms after the start. */
@@ -23,8 +23,9 @@ export function verifyRun(
   puzzleAt: (i: number) => Numbers,
   startedAt: number,
   now: number,
+  size: Size = 3,
 ): { ms: number } | { error: string } {
-  if (!Array.isArray(results) || results.length !== COUNT_PUZZLES) return { error: 'bad run' };
+  if (!Array.isArray(results) || results.length !== size) return { error: 'bad run' };
   const times: number[] = [];
   for (let i = 0; i < results.length; i++) {
     const r = results[i] as PuzzleResult;

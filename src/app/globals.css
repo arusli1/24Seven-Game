@@ -477,6 +477,20 @@ kbd {
 
 /* ---------- account, leaderboard ---------- */
 
+.sizes {
+  display: inline-flex;
+  gap: 10px;
+  padding-left: 14px;
+  border-left: 1px solid var(--line);
+  font-variant-numeric: tabular-nums;
+}
+
+.lb-tabs .sizes {
+  padding: 0 14px 0 0;
+  border-left: 0;
+  border-right: 1px solid var(--line);
+}
+
 .account {
   display: flex;
   gap: 16px;
