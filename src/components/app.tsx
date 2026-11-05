@@ -217,7 +217,7 @@ export function App() {
    * App-level keys. Only arrows change the puzzle or run, so nothing else can
    * throw away work. Card, operator and undo keys live in Board.
    *   → / return  zen: next · count: next puzzle in the run, or start
-   *   ←  zen: previous · count: previous puzzle in the run
+   *   ← / shift+return  zen: previous · count: previous puzzle in the run
    *   ↑  count: restart the run
    *   ?  zen: show solutions
    */
@@ -225,8 +225,8 @@ export function App() {
   keyRef.current = (e) => {
     if (e.metaKey || e.ctrlKey || e.altKey) return;
     setMouseActive(false);
-    // Return works as "next" (same as →), so play never leaves the home row.
-    const k = e.key === 'Enter' ? 'ArrowRight' : e.key;
+    // Return is "next" (→) and shift+return is "back" (←), so play never leaves the home row.
+    const k = e.key === 'Enter' ? (e.shiftKey ? 'ArrowLeft' : 'ArrowRight') : e.key;
     if (dialog || mustPickName) {
       if (k === 'Escape' && !mustPickName) setDialog(null);
       return;
@@ -355,17 +355,17 @@ export function App() {
       <footer className="keys muted fade">
         <span><kbd>a</kbd> <kbd>s</kbd> <kbd>d</kbd> <kbd>f</kbd> card</span>
         <span><kbd>j</kbd> <kbd>k</kbd> <kbd>l</kbd> <kbd>;</kbd> + − × ÷</span>
-        <span><kbd>space</kbd> undo</span>
+        <span><kbd>space</kbd> <kbd>delete</kbd> undo</span>
         {kind === 'zen' ? (
           <>
             <span><kbd>return</kbd> next</span>
-            <span><kbd>←</kbd> <kbd>→</kbd> puzzles</span>
+            <span><kbd>shift</kbd> <kbd>return</kbd> back</span>
             <span><kbd>?</kbd> solutions</span>
           </>
         ) : (
           <>
             <span><kbd>return</kbd> next</span>
-            <span><kbd>←</kbd> <kbd>→</kbd> switch</span>
+            <span><kbd>shift</kbd> <kbd>return</kbd> back</span>
             <span><kbd>↑</kbd> new run</span>
           </>
         )}

@@ -18,7 +18,7 @@ Keys:
 | `space` / `backspace` / `delete` | undo |
 | `esc` | clear selection |
 | `return` / `→` | zen: next puzzle · count: next puzzle in the run, or start |
-| `←` | zen: previous puzzle · count: previous puzzle in the run |
+| `shift` `return` / `←` | zen: previous puzzle · count: previous puzzle in the run |
 | `↑` | count: new run |
 | `?` | zen: show solutions |
 
