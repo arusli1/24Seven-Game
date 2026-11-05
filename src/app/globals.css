@@ -107,7 +107,8 @@ button:disabled {
   color: var(--text);
 }
 
-.link.is-active {
+.link.is-active,
+.link.is-active:hover {
   color: var(--red);
 }
 

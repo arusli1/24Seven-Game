@@ -222,6 +222,7 @@ export function App() {
   };
 
   const chooseSize = (s: Size) => {
+    setKind('count');
     setSize(s);
     toReady('count');
   };
@@ -307,20 +308,18 @@ export function App() {
       </header>
 
       <nav className="modes fade" aria-label="mode">
-        {(['zen', 'count'] as Kind[]).map((k) => (
-          <button key={k} className={`link ${kind === k ? 'is-active' : ''}`} onClick={() => chooseMode(k)}>
-            {k}
+        <button className={`link ${kind === 'zen' ? 'is-active' : ''}`} onClick={() => chooseMode('zen')}>
+          zen
+        </button>
+        {SIZES.map((s) => (
+          <button
+            key={s}
+            className={`link ${kind === 'count' && size === s ? 'is-active' : ''}`}
+            onClick={() => chooseSize(s)}
+          >
+            {s} timed
           </button>
         ))}
-        {kind === 'count' && (
-          <span className="sizes">
-            {SIZES.map((s) => (
-              <button key={s} className={`link ${size === s ? 'is-active' : ''}`} onClick={() => chooseSize(s)}>
-                {s}
-              </button>
-            ))}
-          </span>
-        )}
       </nav>
 
       <main className="stage">

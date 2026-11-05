@@ -6,7 +6,7 @@ export type Kind = 'zen' | 'count';
  * its own leaderboard.
  */
 export type Size = 3 | 1;
-export const SIZES: Size[] = [3, 1];
+export const SIZES: Size[] = [1, 3];
 export const isSize = (n: unknown): n is Size => n === 3 || n === 1;
 
 export function formatMs(ms: number) {

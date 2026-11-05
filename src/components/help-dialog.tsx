@@ -16,7 +16,7 @@ export function HelpDialog({ onClose }: { onClose: () => void }) {
         <p className="muted">
           <span className="accent">zen:</span> just for fun
           <br />
-          <span className="accent">count:</span> solve 3 puzzles (or 1), timed and ranked
+          <span className="accent">1 timed · 3 timed:</span> solve 1 or 3 puzzles fast, ranked
         </p>
         <button className="link help-ok" onClick={onClose}>got it</button>
       </div>

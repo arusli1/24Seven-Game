@@ -7,7 +7,7 @@ Website: https://hard24.vercel.app
 ## Modes
 
 - **zen** (default): endless practice with real back/forward history and every distinct solution.
-- **count**: a run deals 3 puzzles (one easy, one medium, one hard), fixed for that run; solve them in any order, as fast as you can. Or pick **1** for a single hard puzzle. Each size has its own leaderboard.
+- **1 timed / 3 timed**: a timed run of 1 or 3 puzzles, fixed for that run; solve them in any order, as fast as you can. 3 deals one easy, one medium, one hard; 1 deals one hard. Each has its own leaderboard.
 
 Keys:
 
