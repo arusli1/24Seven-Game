@@ -3,7 +3,7 @@ import { STATS, type Stat } from '@/lib/stats';
 import { json, keys, redis } from '@/lib/store';
 
 /*
- * GET /api/leaderboard/<1|3>/<single|mo3|ao5> → top players, fastest first.
+ * GET /api/leaderboard/<1|3>/single → top players, fastest first.
  * One cached page per board, refreshed at most every 10 seconds; the URL has
  * no query string, so nothing can bypass the cache.
  */

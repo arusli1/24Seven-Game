@@ -93,16 +93,14 @@ describe('ranked flow', () => {
     expect((await claimName(req({ name: 'andrew' }))).status).toBe(409);
   });
 
-  it('builds single, mean of 3 and average of 5 on the global board', async () => {
+  it('keeps each player\'s best single on the board', async () => {
     sub = 'google-1';
     await claimName(req({ name: 'andrew' }));
     for (const secs of [[10, 20, 30], [5, 10, 20], [8, 16, 25], [4, 9, 60], [6, 12, 18]]) {
       expect((await playRun(secs)).status).toBe(200);
     }
-    // run times: 30, 20, 25, 60, 18 → best single 18; best mo3 = mean(30,20,25) = 25
+    // run times: 30, 20, 25, 60, 18 → best single 18
     expect((await board(3, 'single')).entries).toEqual([{ name: 'andrew', ms: 18_000 }]);
-    expect((await board(3, 'mo3')).entries[0].ms).toBe(25_000);
-    expect((await board(3, 'ao5')).entries[0].ms).toBe(Math.round((20_000 + 25_000 + 30_000) / 3));
     expect(await (await me()).json()).toEqual({ enabled: true, signedIn: true, username: 'andrew' });
   });
 
@@ -114,15 +112,13 @@ describe('ranked flow', () => {
     expect((await board(3, 'single')).entries).toEqual([]);
   });
 
-  it('an abandoned run is a DNF in the next average', async () => {
+  it('an abandoned run never reaches the board', async () => {
     sub = 'google-1';
     await claimName(req({ name: 'andrew' }));
     await playRun([10, 20, 30]);
     await startRun(req({ size: 3 })); // abandoned
     await playRun([5, 10, 20]);
-    const res = await (await playRun([5, 10, 20])).json();
-    expect(res.current).toEqual({ single: 20_000 }); // last 3 include the DNF, so no avg of 3
-    expect(db.lists.get('recent:google-1')).toEqual([20_000, 20_000, -1, 30_000]);
+    expect((await board(3, 'single')).entries).toEqual([{ name: 'andrew', ms: 20_000 }]);
   });
 
   it('a run counts once and only for its owner', async () => {

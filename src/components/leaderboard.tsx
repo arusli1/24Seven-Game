@@ -2,7 +2,6 @@
 
 import { useEffect, useState } from 'react';
 import { formatMs, modeLabel, SIZES, type Size } from '@/lib/modes';
-import { STAT_LABEL, STATS, type Stat } from '@/lib/stats';
 
 interface Entry { name: string; ms: number }
 
@@ -16,7 +15,6 @@ export function Leaderboard({
   onClose: () => void;
 }) {
   const [size, setSize] = useState<Size>(initialSize);
-  const [stat, setStat] = useState<Stat>('single');
   const [entries, setEntries] = useState<Entry[] | null>(null);
   const [error, setError] = useState<string | null>(null);
 
@@ -24,7 +22,7 @@ export function Leaderboard({
     let live = true;
     setEntries(null);
     setError(null);
-    fetch(`/api/leaderboard/${size}/${stat}`)
+    fetch(`/api/leaderboard/${size}/single`)
       .then(async (r) => {
         const data = await r.json();
         if (!live) return;
@@ -35,7 +33,7 @@ export function Leaderboard({
     return () => {
       live = false;
     };
-  }, [stat, size]);
+  }, [size]);
 
   return (
     <div className="overlay" onPointerDown={onClose}>
@@ -49,13 +47,6 @@ export function Leaderboard({
             ))}
           </div>
           <button className="link" onClick={onClose} aria-label="close">✕</button>
-        </div>
-        <div className="lb-tabs">
-          {STATS.map((s) => (
-            <button key={s} className={`link ${s === stat ? 'is-active' : ''}`} onClick={() => setStat(s)}>
-              {STAT_LABEL[s]}
-            </button>
-          ))}
         </div>
         <div className="lb-list">
           {error && <p className="muted">{error}</p>}

@@ -1,5 +1,5 @@
 import { formatMs, modeLabel, type Size } from '@/lib/modes';
-import { STAT_LABEL, STATS, type Stat } from '@/lib/stats';
+import type { Stat } from '@/lib/stats';
 
 export interface RankedOutcome {
   current: Partial<Record<Stat, number>>;
@@ -20,12 +20,13 @@ export function Results({
   size: Size;
   /** Time for each puzzle, in the order solved. */
   splits: number[];
-  /** Stats after a verified ranked run. */
+  /** Your best after a verified ranked run. */
   ranked: RankedOutcome | null;
   /** Small line under the time (e.g. "sign in to rank"). */
   note?: React.ReactNode;
   onRestart: () => void;
 }) {
+  const best = ranked?.pbs.single ?? undefined;
   return (
     <div className="results">
       <div className="score">{formatMs(ms)}</div>
@@ -33,18 +34,9 @@ export function Results({
         {modeLabel(size)}
         {splits.length > 1 && ` · ${splits.map(secs).join(' · ')}`}
       </p>
-      {ranked && (
+      {ranked && best !== undefined && (
         <div className="stats">
-          {STATS.filter((s) => ranked.current[s] !== undefined).map((s) => {
-            const value = ranked.current[s]!;
-            const pb = ranked.pbs[s] === value;
-            return (
-              <span key={s}>
-                <span className="muted">{STAT_LABEL[s]}</span> {formatMs(value)}
-                {pb && <span className="accent"> pb</span>}
-              </span>
-            );
-          })}
+          {best === ms ? <span className="accent">pb</span> : <span><span className="muted">pb</span> {formatMs(best)}</span>}
         </div>
       )}
       {note && <div className="muted note">{note}</div>}

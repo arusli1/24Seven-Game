@@ -45,9 +45,8 @@ Each puzzle is tagged with every style it fits (fraction, decoy, giant, …; see
 
 Timed runs are ranked when you're signed in with Google and have picked a username; zen is always
 casual. Finish a run signed out, then sign in within the hour, and that run is ranked (once per player).
-Each mode has a board with three tabs, speedcubing style: **single** (best run), **avg of 3**
-(mean of 3 runs in a row) and **avg of 5** (5 in a row, drop best and worst, mean of the rest). A run
-you start and abandon is a DNF: it voids an avg of 3 and counts as the worst time in an avg of 5.
+Each mode (1 timed, 3 timed) has one board: every player's best run. A run you start and abandon
+never counts.
 
 The server deals every run (`POST /api/run`), then replays every move and checks the timing before
 accepting it (`POST /api/run/finish`, `src/lib/verify.ts`). Data lives in Upstash Redis (free tier);
