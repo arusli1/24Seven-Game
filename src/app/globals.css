@@ -552,6 +552,20 @@ kbd {
   color: var(--red);
 }
 
+.help {
+  max-width: 340px;
+  gap: 12px;
+  line-height: 1.6;
+  margin-top: 10vh;
+  font-size: 0.9rem;
+  text-align: center;
+}
+
+.help-ok {
+  margin-top: 6px;
+  align-self: center;
+}
+
 .name-dialog input {
   width: 100%;
   padding: 10px;
@@ -600,13 +614,21 @@ kbd {
 @media (hover: none) {
   .keys,
   .op-key,
-  .card-key { display: none; }
+  .card-key,
+  .keys-only { display: none; }
 }
 
 @media (max-width: 480px) {
   .shell { gap: 18px; }
-  .cards { gap: 8px; }
-  .pip { font-size: 0.7rem; }
+  /* 2×2 on phones: cards twice as wide, easier to tap and read. */
+  .cards {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 12px 14px;
+    max-width: 290px;
+  }
+  .card { font-size: 3.4rem; }
+  .pip { font-size: 0.8rem; }
   .pip.tl { top: 5px; left: 6px; }
   .pip.br { bottom: 5px; right: 6px; }
   .op { width: 46px; height: 46px; }

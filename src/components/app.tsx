@@ -7,6 +7,7 @@ import { Leaderboard } from './leaderboard';
 import { Results, type RankedOutcome } from './results';
 import { post, useAccount } from './use-account';
 import { UsernameDialog } from './username-dialog';
+import { HelpDialog } from './help-dialog';
 import { isSolved, newBoard, type BoardState } from '@/lib/board';
 import { COUNT_PUZZLES, type Kind } from '@/lib/modes';
 import { dealCount, puzzleStream, randomSeed, type Numbers } from '@/lib/pool';
@@ -46,7 +47,17 @@ export function App() {
   const [resultMs, setResultMs] = useState<number | null>(null);
   const [ranked, setRanked] = useState<RankedOutcome | null>(null);
   const [rankNote, setRankNote] = useState<string | null>(null);
-  const [dialog, setDialog] = useState<'leaderboard' | 'name' | null>(null);
+  const [dialog, setDialog] = useState<'leaderboard' | 'name' | 'help' | null>(null);
+
+  // Show how to play once, on a first visit.
+  useEffect(() => {
+    try {
+      if (!localStorage.getItem('seen-help')) {
+        localStorage.setItem('seen-help', '1');
+        setDialog('help');
+      }
+    } catch {}
+  }, []);
   const { account, setAccount, refresh } = useAccount();
   const runToken = useRef(0);
   const [mouseActive, setMouseActive] = useState(true);
@@ -228,7 +239,7 @@ export function App() {
     // Return is "next" (→) and shift+return is "back" (←), so play never leaves the home row.
     const k = e.key === 'Enter' ? (e.shiftKey ? 'ArrowLeft' : 'ArrowRight') : e.key;
     if (dialog || mustPickName) {
-      if (k === 'Escape' && !mustPickName) setDialog(null);
+      if ((k === 'Escape' || (dialog === 'help' && k === 'ArrowRight')) && !mustPickName) setDialog(null);
       return;
     }
     if (k === ' ' || k === 'Tab' || k.startsWith('Arrow')) e.preventDefault(); // no scrolling or focus jumps
@@ -273,16 +284,19 @@ export function App() {
         <button className="logo" onClick={() => toReady(kind)} aria-label="twentyfour">
           <span className="suit" aria-hidden>♦</span>twentyfour
         </button>
-        {account.enabled && (
-          <div className="account">
-            <button className="link" onClick={() => setDialog('leaderboard')}>leaderboard</button>
-            {account.signedIn ? (
-              <button className="link" onClick={() => setDialog('name')}>{account.username ?? '…'}</button>
-            ) : (
-              <button className="link" onClick={() => void signIn('google')}>sign in</button>
-            )}
-          </div>
-        )}
+        <div className="account">
+          {account.enabled && (
+            <>
+              <button className="link" onClick={() => setDialog('leaderboard')}>leaderboard</button>
+              {account.signedIn ? (
+                <button className="link" onClick={() => setDialog('name')}>{account.username ?? '…'}</button>
+              ) : (
+                <button className="link" onClick={() => void signIn('google')}>sign in</button>
+              )}
+            </>
+          )}
+          <button className="link" onClick={() => setDialog('help')} aria-label="how to play">?</button>
+        </div>
       </header>
 
       <nav className="modes fade" aria-label="mode">
@@ -371,6 +385,7 @@ export function App() {
         )}
       </footer>
 
+      {dialog === 'help' && !mustPickName && <HelpDialog onClose={() => setDialog(null)} />}
       {dialog === 'leaderboard' && <Leaderboard me={account.username} onClose={() => setDialog(null)} />}
       {(mustPickName || dialog === 'name') && (
         <UsernameDialog
