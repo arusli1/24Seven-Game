@@ -5,7 +5,7 @@
   --bg-alt: #161618;
   --line: #2a2a2e;
   --text: #ecebe7;
-  --sub: #6f6e73;
+  --sub: #85848a;
   --red: #d01f36;
   --face: #d9d3c7;
   --ink: #141414;
@@ -65,7 +65,6 @@ button:disabled {
 .muted { color: var(--sub); }
 .accent { color: var(--red); }
 .error { color: var(--red); }
-.text { color: var(--text); }
 
 /* ---------- layout ---------- */
 
@@ -109,7 +108,7 @@ button:disabled {
 
 .link.is-active,
 .link.is-active:hover {
-  color: var(--red);
+  color: var(--text);
 }
 
 .link:disabled {
@@ -134,14 +133,23 @@ button:disabled {
   letter-spacing: 0.02em;
 }
 
+.modes .link {
+  padding: 4px 2px;
+}
+
+.toast {
+  align-self: center;
+  font-size: 0.85rem;
+}
+
 .stage {
   flex: 1;
   display: flex;
   flex-direction: column;
   align-items: center;
-  justify-content: center;
+  justify-content: flex-start;
   gap: 28px;
-  padding-bottom: 6vh;
+  padding-top: 3vh;
 }
 
 .status {
@@ -159,6 +167,15 @@ button:disabled {
   min-height: 1.5rem;
   font-size: 0.9rem;
   text-align: center;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+}
+
+.hint {
+  color: var(--text);
+  font-variant-numeric: tabular-nums;
 }
 
 .hand-tabs {
@@ -181,8 +198,8 @@ button:disabled {
 }
 
 .hand-tab.is-done {
-  color: var(--red);
-  border-color: var(--red);
+  color: var(--sub);
+  border-color: var(--line);
 }
 
 .nav {
@@ -200,22 +217,58 @@ button:disabled {
   font-size: 1rem;
 }
 
-/* Replays every time its key (the solved count) changes. */
-.flash {
-  padding: 0 6px;
-  animation: flash 0.25s ease-out;
+.clock-row {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
 }
 
-@keyframes flash {
-  from { color: var(--face); background: var(--red); }
+.restart {
+  padding: 6px 10px;
+  font-size: 1.1rem;
+}
+
+.ready-screen,
+.results {
+  margin-top: 10vh;
+}
+
+.ready-screen {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+}
+
+/* Face-down cards: how many puzzles the run deals. */
+.backs {
+  display: flex;
+  gap: 10px;
+}
+
+.back {
+  width: 38px;
+  aspect-ratio: 5 / 7;
+  border-radius: 4px;
+  background:
+    repeating-linear-gradient(45deg, rgb(255 255 255 / 0.08) 0 2px, transparent 2px 6px),
+    var(--red);
+  box-shadow: inset 0 0 0 3px var(--face), 0 4px 10px rgb(0 0 0 / 0.5);
 }
 
 .ready {
   display: flex;
   align-items: center;
   gap: 10px;
-  padding: 40px 32px;
+  padding: 28px 32px;
   font-size: 1.5rem;
+  color: var(--text);
+}
+
+.ready kbd,
+.again kbd {
+  font-size: 0.6em;
+  color: var(--sub);
 }
 
 .solutions-count {
@@ -263,8 +316,12 @@ button:disabled {
 kbd {
   font-family: inherit;
   padding: 1px 5px;
-  border: 1px solid var(--line);
-  color: var(--text);
+  border: 1px solid #222226;
+  color: inherit;
+}
+
+.keys kbd + kbd {
+  margin-left: 2px;
 }
 
 /* ---------- board ---------- */
@@ -312,6 +369,11 @@ kbd {
   animation: deal 0.12s ease-out;
 }
 
+/* Timed: cards are readable on the first frame the clock runs. */
+.is-timed .card {
+  animation: none;
+}
+
 /* Thin printed frame inset from the edge. */
 .card:not(.is-empty)::after {
   content: '';
@@ -339,14 +401,15 @@ kbd {
 .pip.tl { top: 7px; left: 8px; }
 .pip.br { bottom: 7px; right: 8px; transform: rotate(180deg); }
 
+/* The card's key, printed in the bottom-left corner like an index. */
 .card-key {
   position: absolute;
-  bottom: -22px;
-  left: 50%;
-  transform: translateX(-50%);
+  bottom: 8px;
+  left: 10px;
   font-family: var(--font);
   font-size: 0.7rem;
-  color: var(--sub);
+  line-height: 1;
+  color: rgb(0 0 0 / 0.35);
 }
 
 .card.is-empty {
@@ -386,6 +449,39 @@ kbd {
 
 .board.is-solved .card::after {
   border-color: rgb(255 255 255 / 0.25);
+}
+
+.board.is-solved .card.is-selected {
+  --lift: 0px;
+  box-shadow:
+    0 1px 1px rgb(0 0 0 / 0.5),
+    0 4px 8px rgb(0 0 0 / 0.45),
+    0 12px 24px -6px rgb(0 0 0 / 0.6);
+}
+
+.board.is-solved .card.is-empty {
+  opacity: 0.35;
+}
+
+.board.is-solved .card-key {
+  color: rgb(255 255 255 / 0.4);
+}
+
+/* One card left and it isn't 24, or ÷0: shake. */
+.board.is-wrong .card:not(.is-empty),
+.card.is-bad {
+  animation: shake 0.3s ease-out;
+}
+
+@keyframes shake {
+  20%, 60% { transform: translateX(-5px) rotate(var(--tilt)); }
+  40%, 80% { transform: translateX(5px) rotate(var(--tilt)); }
+}
+
+/* …and point at undo. */
+.op-undo.is-hint {
+  color: var(--text);
+  border-color: var(--text);
 }
 
 .frac {
@@ -447,7 +543,6 @@ kbd {
 
 .op:disabled {
   color: var(--sub);
-  opacity: 0.5;
 }
 
 .op-undo {
@@ -469,33 +564,32 @@ kbd {
   margin-top: 16px;
 }
 
+.splits {
+  font-size: 0.85rem;
+  font-variant-numeric: tabular-nums;
+}
+
 .score {
+  color: var(--red);
   font-family: var(--font-card);
-  font-size: clamp(4.5rem, 20vw, 8rem);
+  font-size: clamp(3.5rem, 14vw, 6rem);
   line-height: 1;
   font-variant-numeric: lining-nums tabular-nums;
 }
 
 /* ---------- account, leaderboard ---------- */
 
-.sizes {
-  display: inline-flex;
-  gap: 10px;
-  padding-left: 14px;
-  border-left: 1px solid var(--line);
-  font-variant-numeric: tabular-nums;
-}
-
-.lb-tabs .sizes {
-  padding: 0 14px 0 0;
-  border-left: 0;
-  border-right: 1px solid var(--line);
-}
-
 .account {
   display: flex;
+  align-items: baseline;
   gap: 16px;
   font-size: 0.85rem;
+}
+
+.help-link {
+  padding: 4px 8px;
+  margin-right: -8px;
+  font-size: 1rem;
 }
 
 .stats {
@@ -555,12 +649,9 @@ kbd {
 .lb-row {
   display: grid;
   grid-template-columns: 2.5rem 1fr auto;
-  padding: 7px 8px;
+  padding: 8px 4px;
+  border-bottom: 1px solid var(--line);
   font-variant-numeric: tabular-nums;
-}
-
-.lb-row:nth-child(odd) {
-  background: var(--bg-alt);
 }
 
 .lb-row.is-me {
@@ -579,6 +670,41 @@ kbd {
 .help-ok {
   margin-top: 6px;
   align-self: center;
+}
+
+.move {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 8px;
+}
+
+.mini {
+  width: 30px;
+  aspect-ratio: 5 / 7;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 3px;
+  background: var(--face);
+  color: var(--ink);
+  font-family: var(--font-card);
+  font-size: 1rem;
+}
+
+.mini.is-red {
+  background: var(--red);
+  color: var(--face);
+}
+
+.modes-help {
+  display: flex;
+  flex-direction: column;
+}
+
+.modes-help .label {
+  color: var(--text);
+  margin-right: 6px;
 }
 
 .name-dialog input {
@@ -630,7 +756,9 @@ kbd {
   .keys,
   .op-key,
   .card-key,
-  .keys-only { display: none; }
+  .keys-only,
+  .ready kbd,
+  .again kbd { display: none; }
 }
 
 @media (max-width: 480px) {
@@ -650,4 +778,9 @@ kbd {
   .pip.br { bottom: 5px; right: 6px; }
   .op { width: 46px; height: 46px; }
   .op-undo { margin-left: 4px; }
+  /* Big cards: a smaller tilt reads as dealt, not crooked. */
+  .card { transform: translateY(var(--lift)) rotate(calc(var(--tilt) * 0.5)); }
+  /* Tap targets. */
+  .modes .link { padding: 10px 4px; }
+  .modes { padding: 0 14px; }
 }

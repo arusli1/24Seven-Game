@@ -6,10 +6,11 @@ Website: https://hard24.vercel.app
 
 ## Modes
 
-- **zen** (default): endless practice with real back/forward history and every distinct solution.
-- **1 timed / 3 timed**: a timed run of 1 or 3 puzzles, fixed for that run; solve them in any order, as fast as you can. 3 deals one easy, one medium, one hard; 1 deals one hard. Each has its own leaderboard.
+- **zen** (default): endless practice with back/forward history, a one-step hint, then every distinct solution.
+- **1 timed / 3 timed**: a timed run of 1 or 3 puzzles, fixed for that run; solve them in any order, as fast
+  as you can. 3 deals one easy, one medium, one hard; 1 deals one hard. Each has its own leaderboard.
 
-Keys:
+Keys (matched by physical key, so the home row works on any layout):
 
 | key | does |
 |---|---|
@@ -17,12 +18,14 @@ Keys:
 | `j k l ;` (or `+ - * /`) | + − × ÷ |
 | `space` / `backspace` / `delete` | undo |
 | `esc` | clear selection |
-| `return` / `→` | zen: next puzzle · count: next puzzle in the run, or start |
-| `shift` `return` / `←` | zen: previous puzzle · count: previous puzzle in the run |
-| `↑` | count: new run |
-| `?` | zen: show solutions |
+| `return` / `→` | zen: next puzzle · timed: next puzzle in the run, or start |
+| `shift` `return` / `←` | zen: previous puzzle · timed: previous puzzle in the run |
+| `↑` | timed: new run |
+| `?` | zen: hint, then all solutions |
+| `tab` | switch mode (not mid-run) |
+| `h` | how to play |
 
-Only arrows change the puzzle or run, so no other key can throw away work.
+Held keys don't repeat (except undo). A solved puzzle in a run is locked.
 
 Merging: pick card A, an operator, then card B. A op B lands in B's slot and stays selected; A's slot
 empties. Slots never shift, so `a l s` is always slot 1 × slot 2.
@@ -40,14 +43,18 @@ Each puzzle is tagged with every style it fits (fraction, decoy, giant, …; see
 
 ## Ranked play and leaderboard
 
-Count runs are ranked when you're signed in with Google and have picked a username; zen is always
-casual. One global board with three tabs, speedcubing style: **single** (best run), **avg of 3**
-(mean of 3 runs in a row) and **avg of 5** (5 in a row, drop best and worst, mean of the rest).
+Timed runs are ranked when you're signed in with Google and have picked a username; zen is always
+casual. Finish a run signed out, then sign in within the hour, and that run is ranked (once per player).
+Each mode has a board with three tabs, speedcubing style: **single** (best run), **avg of 3**
+(mean of 3 runs in a row) and **avg of 5** (5 in a row, drop best and worst, mean of the rest). A run
+you start and abandon is a DNF: it voids an avg of 3 and counts as the worst time in an avg of 5.
 
-The server deals each ranked run (`POST /api/run`), then replays every move and checks the timing
-before accepting it (`POST /api/run/finish`, `src/lib/verify.ts`). Data lives in Upstash Redis
-(free tier); sign-in is Google via next-auth with cookie sessions. Without the env vars in
-`.env.example`, sign-in and the leaderboard are hidden and everything else works.
+The server deals every run (`POST /api/run`), then replays every move and checks the timing before
+accepting it (`POST /api/run/finish`, `src/lib/verify.ts`). Data lives in Upstash Redis (free tier);
+sign-in is Google via next-auth with cookie sessions. Without the env vars in `.env.example`, sign-in and
+the leaderboard are hidden and everything else works.
+
+To take a cheated time down: `npm run remove-player <username>` (needs the Upstash vars in `.env.local`).
 
 ## Development
 

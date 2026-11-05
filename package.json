@@ -9,7 +9,8 @@
     "lint": "next lint",
     "test": "vitest",
     "import:difficulties": "tsx scripts/import-difficulties.ts",
-    "build:pool": "tsx scripts/build-pool.ts"
+    "build:pool": "tsx scripts/build-pool.ts",
+    "remove-player": "tsx --env-file=.env.local scripts/remove-player.ts"
   },
   "dependencies": {
     "@upstash/redis": "^1.41.0",

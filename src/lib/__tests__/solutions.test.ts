@@ -20,3 +20,11 @@ describe('distinctSolutions', () => {
     expect(distinctSolutions([1, 1, 1, 1])).toEqual([]);
   });
 });
+
+describe('firstStep', () => {
+  it('gives a first move that still reaches 24', async () => {
+    const { firstStep } = await import('../solutions');
+    expect(firstStep([1, 4, 5, 6])).toMatch(/^\d+ [+−×÷] \d+$/);
+    expect(firstStep([1, 1, 1, 1])).toBeNull();
+  });
+});

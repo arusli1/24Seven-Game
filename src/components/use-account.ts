@@ -1,17 +1,15 @@
 'use client';
 
 import { useCallback, useEffect, useState } from 'react';
-import type { Stat } from '@/lib/stats';
 
 export interface Account {
   /** Leaderboard is configured on the server. */
   enabled: boolean;
   signedIn: boolean;
   username: string | null;
-  pbs: Partial<Record<Stat, number | null>>;
 }
 
-const OFF: Account = { enabled: false, signedIn: false, username: null, pbs: {} };
+const OFF: Account = { enabled: false, signedIn: false, username: null };
 
 /** The signed-in player, loaded once from /api/me. */
 export function useAccount() {
@@ -20,7 +18,7 @@ export function useAccount() {
     try {
       const r = await fetch('/api/me', { cache: 'no-store' });
       const data = await r.json();
-      setAccount({ ...OFF, ...data, pbs: data.pbs ?? {} });
+      setAccount({ ...OFF, ...data });
     } catch {
       setAccount(OFF);
     }

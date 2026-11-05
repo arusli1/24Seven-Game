@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { formatMs, SIZES, type Size } from '@/lib/modes';
+import { formatMs, modeLabel, SIZES, type Size } from '@/lib/modes';
 import { STAT_LABEL, STATS, type Stat } from '@/lib/stats';
 
 interface Entry { name: string; ms: number }
@@ -24,7 +24,7 @@ export function Leaderboard({
     let live = true;
     setEntries(null);
     setError(null);
-    fetch(`/api/leaderboard?stat=${stat}&size=${size}`)
+    fetch(`/api/leaderboard/${size}/${stat}`)
       .then(async (r) => {
         const data = await r.json();
         if (!live) return;
@@ -42,20 +42,20 @@ export function Leaderboard({
       <div className="dialog" onPointerDown={(e) => e.stopPropagation()} role="dialog" aria-label="leaderboard">
         <div className="dialog-head">
           <div className="lb-tabs">
-            <span className="sizes">
-              {SIZES.map((s) => (
-                <button key={s} className={`link ${s === size ? 'is-active' : ''}`} onClick={() => setSize(s)} aria-label={`${s}-puzzle runs`}>
-                  {s}
-                </button>
-              ))}
-            </span>
-            {STATS.map((s) => (
-              <button key={s} className={`link ${s === stat ? 'is-active' : ''}`} onClick={() => setStat(s)}>
-                {STAT_LABEL[s]}
+            {SIZES.map((s) => (
+              <button key={s} className={`link ${s === size ? 'is-active' : ''}`} onClick={() => setSize(s)}>
+                {modeLabel(s)}
               </button>
             ))}
           </div>
           <button className="link" onClick={onClose} aria-label="close">✕</button>
+        </div>
+        <div className="lb-tabs">
+          {STATS.map((s) => (
+            <button key={s} className={`link ${s === stat ? 'is-active' : ''}`} onClick={() => setStat(s)}>
+              {STAT_LABEL[s]}
+            </button>
+          ))}
         </div>
         <div className="lb-list">
           {error && <p className="muted">{error}</p>}

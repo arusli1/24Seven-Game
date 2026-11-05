@@ -1,12 +1,12 @@
 import { describe, expect, it } from 'vitest';
 import pool from '../../../data/pool.json';
-import { dealCount, POOL_STYLES, puzzleStream, STYLE_WEIGHTS } from '../pool';
+import { dealRun, puzzleStream, stylesOf, STYLE_WEIGHTS } from '../pool';
 import { distinctSolutions } from '../solutions';
 import { analyze } from '../analyze';
 
 describe('pool', () => {
   it('every built style has a weight and every weight has puzzles', () => {
-    expect([...POOL_STYLES].sort()).toEqual(Object.keys(STYLE_WEIGHTS).sort());
+    expect(Object.keys((pool as { styles: object }).styles).sort()).toEqual(Object.keys(STYLE_WEIGHTS).sort());
   });
 
   it('stream is deterministic, solvable, and does not repeat early', () => {
@@ -31,8 +31,8 @@ describe('dealCount', () => {
 
   it('deals one easy, one medium and one hard, deterministically', () => {
     for (const seed of [1, 2, 3, 42, 999]) {
-      const hand = dealCount(seed);
-      expect(dealCount(seed)).toEqual(hand);
+      const hand = dealRun(seed, 3);
+      expect(dealRun(seed, 3)).toEqual(hand);
       expect(hand).toHaveLength(3);
       expect(hand.filter((n) => inStyle('easy', n))).toHaveLength(1);
       expect(hand.filter((n) => inStyle('classic-mid', n))).toHaveLength(1);
@@ -41,11 +41,14 @@ describe('dealCount', () => {
 
   it('size 1 deals a single hard puzzle', () => {
     const hard = Object.keys(styles).filter((s) => !['easy', 'classic-mid', 'wide'].includes(s));
-    for (const seed of [1, 2, 3, 42, 999]) {
-      const hand = dealCount(seed, 1);
-      expect(dealCount(seed, 1)).toEqual(hand);
+    for (let seed = 0; seed < 300; seed++) {
+      const hand = dealRun(seed, 1);
+      expect(dealRun(seed, 1)).toEqual(hand);
       expect(hand).toHaveLength(1);
       expect(hard.some((s) => inStyle(s, hand[0]))).toBe(true);
+      // Never something that is also tagged easy or medium.
+      expect(stylesOf(hand[0])).not.toContain('easy');
+      expect(stylesOf(hand[0])).not.toContain('classic-mid');
     }
   });
 });

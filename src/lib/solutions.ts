@@ -144,3 +144,34 @@ export function distinctSolutions(nums: number[]): string[] {
   // Simplest-looking first.
   return [...found.values()].sort((x, y) => x.length - y.length || (x < y ? -1 : 1));
 }
+
+/** A first move that still leads to 24 without going negative, e.g. "5 ÷ 4". For hints. */
+export function firstStep(nums: number[]): string | null {
+  const SYM = { '+': '+', '-': '−', '*': '×', '/': '÷' } as const;
+  const steps = (a: Rational, b: Rational) => {
+    const out: [keyof typeof SYM, Rational][] = [['+', a.add(b)], ['*', a.mul(b)]];
+    if (a.sub(b).numerator >= 0) out.push(['-', a.sub(b)]);
+    if (b.numerator !== 0) out.push(['/', a.div(b)]);
+    return out;
+  };
+  const solvable = (xs: Rational[]): boolean => {
+    if (xs.length === 1) return xs[0].equals(TARGET);
+    for (let i = 0; i < xs.length; i++)
+      for (let j = 0; j < xs.length; j++) {
+        if (i === j) continue;
+        const rest = xs.filter((_, k) => k !== i && k !== j);
+        if (steps(xs[i], xs[j]).some(([, v]) => solvable([...rest, v]))) return true;
+      }
+    return false;
+  };
+  const xs = nums.map((n) => new Rational(n));
+  for (let i = 0; i < xs.length; i++)
+    for (let j = 0; j < xs.length; j++) {
+      if (i === j) continue;
+      const rest = xs.filter((_, k) => k !== i && k !== j);
+      for (const [op, v] of steps(xs[i], xs[j])) {
+        if (solvable([...rest, v])) return `${nums[i]} ${SYM[op]} ${nums[j]}`;
+      }
+    }
+  return null;
+}

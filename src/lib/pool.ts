@@ -20,10 +20,10 @@ export const STYLE_WEIGHTS: Record<string, number> = {
 
 export type Numbers = [number, number, number, number];
 
-const { puzzles, styles } = pool as { puzzles: number[][]; styles: Record<string, number[]> };
-const entries = Object.entries(STYLE_WEIGHTS) as [string, number][];
+type Styles = Record<string, number[]>;
 
-export const POOL_STYLES = Object.keys(styles);
+const { puzzles, styles } = pool as { puzzles: number[][]; styles: Styles };
+const entries = Object.entries(STYLE_WEIGHTS) as [string, number][];
 
 /** mulberry32: small, fast, deterministic PRNG. */
 function rng(seed: number) {
@@ -44,7 +44,7 @@ export function randomSeed() {
 type Weights = [style: string, weight: number][];
 
 /** Draw one puzzle from weighted styles, avoiding `used`, with its numbers shuffled. */
-function drawFrom(next: () => number, weights: Weights, used: Set<number>): Numbers {
+function drawFrom(next: () => number, weights: Weights, from: Styles, used: Set<number>): Numbers {
   const total = weights.reduce((sum, [, w]) => sum + w, 0);
   for (let tries = 0; ; tries++) {
     let r = next() * total;
@@ -52,7 +52,7 @@ function drawFrom(next: () => number, weights: Weights, used: Set<number>): Numb
     for (const [id, w] of weights) {
       if ((r -= w) < 0) { style = id; break; }
     }
-    const options = styles[style];
+    const options = from[style];
     const index = options[Math.floor(next() * options.length)];
     if (used.has(index) && tries < 20) continue;
     used.add(index);
@@ -72,31 +72,43 @@ export function puzzleStream(seed: number) {
   const used = new Set<number>();
   const list: Numbers[] = [];
   return (index: number): Numbers => {
-    while (list.length <= index) list.push(drawFrom(next, entries, used));
+    while (list.length <= index) list.push(drawFrom(next, entries, styles, used));
     return list[index];
   };
 }
 
-/**
- * Count deals. Size 3: one easy, one medium, one hard, in random order.
- * Size 1: one hard. Easy and
- * medium come from real 4nums solve rates; hard uses the hard styles at
- * their usual weights. Deterministic for a seed so the server can verify.
+/*
+ * Timed deals. Easy and medium come from real 4nums solve rates. Hard uses
+ * the hard styles at their usual weights, minus any puzzle that is also
+ * tagged easy or medium (a puzzle can carry several styles).
  */
-const DEAL_TIERS: Weights[] = [
-  [['easy', 1]],
-  [['classic-mid', 1]],
-  entries.filter(([id]) => !['easy', 'classic-mid', 'wide'].includes(id)),
-];
+const SOFT = ['easy', 'classic-mid', 'wide'];
+const soft = new Set([...styles.easy, ...styles['classic-mid']]);
+const hardStyles: Styles = Object.fromEntries(
+  Object.entries(styles).map(([id, list]) => [id, list.filter((i) => !soft.has(i))]),
+);
+const HARD: Weights = entries.filter(([id]) => !SOFT.includes(id) && hardStyles[id].length > 0);
 
-export function dealCount(seed: number, size: 3 | 1 = 3): Numbers[] {
+/** The puzzles of a timed run: 3 is one easy, one medium, one hard in random order; 1 is one hard. */
+export function dealRun(seed: number, size: 1 | 3): Numbers[] {
   const next = rng(seed);
   const used = new Set<number>();
-  const tiers = size === 1 ? DEAL_TIERS.slice(2) : DEAL_TIERS;
-  const hand = tiers.map((tier) => drawFrom(next, tier, used));
+  if (size === 1) return [drawFrom(next, HARD, hardStyles, used)];
+  const hand = [
+    drawFrom(next, [['easy', 1]], styles, used),
+    drawFrom(next, [['classic-mid', 1]], styles, used),
+    drawFrom(next, HARD, hardStyles, used),
+  ];
   for (let i = hand.length - 1; i > 0; i--) {
     const j = Math.floor(next() * (i + 1));
     [hand[i], hand[j]] = [hand[j], hand[i]];
   }
   return hand;
+}
+
+/** For tests: which styles a puzzle carries. */
+export function stylesOf(nums: number[]) {
+  const key = [...nums].sort((a, b) => a - b).join();
+  const index = puzzles.findIndex((p) => [...p].sort((a, b) => a - b).join() === key);
+  return Object.keys(styles).filter((id) => styles[id].includes(index));
 }

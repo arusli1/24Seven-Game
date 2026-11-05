@@ -3,21 +3,23 @@
 import { useEffect, useRef, useState } from 'react';
 import { combine, isSolved, OP_SYMBOL, OPERATORS, undo, type BoardState, type Operator } from '@/lib/board';
 
-/** Hearts and diamonds print in red. */
-
 /** A small, stable tilt per card (from its id) so the hand looks dealt, not drawn. */
 const TILTS = [-1.5, 0.8, -0.4, 1.2, -1, 0.3, 1.5, -0.7];
 const tilt = (id: number) => ({ '--tilt': `${TILTS[id % TILTS.length]}deg` }) as React.CSSProperties;
 const SUITS = ['♠', '♥', '♣', '♦'];
 
-/** Home row: left hand picks cards (a s d f), right hand picks operators (j k l ;). */
+/**
+ * Home row: left hand picks cards (a s d f), right hand picks operators (j k l ;).
+ * Matched by physical key, so the home row stays the home row on any layout.
+ * Symbol keys (+ - * /) and 1–4 work too.
+ */
 const SLOT_KEYS = ['a', 's', 'd', 'f'];
 const OP_KEYS: Record<Operator, string> = { '+': 'j', '-': 'k', '*': 'l', '/': ';' };
-const KEY_TO_SLOT: Record<string, number> = { a: 0, s: 1, d: 2, f: 3, '1': 0, '2': 1, '3': 2, '4': 3 };
-const KEY_TO_OP: Record<string, Operator> = {
-  j: '+', k: '-', l: '*', ';': '/',
-  '+': '+', '=': '+', '-': '-', '*': '*', '/': '/',
+const CODE_TO_SLOT: Record<string, number> = {
+  KeyA: 0, KeyS: 1, KeyD: 2, KeyF: 3, Digit1: 0, Digit2: 1, Digit3: 2, Digit4: 3,
 };
+const CODE_TO_OP: Record<string, Operator> = { KeyJ: '+', KeyK: '-', KeyL: '*', Semicolon: '/' };
+const KEY_TO_OP: Record<string, Operator> = { '+': '+', '=': '+', '-': '-', '*': '*', '/': '/' };
 
 interface Props {
   state: BoardState;
@@ -41,14 +43,29 @@ function sizeClass(n: number, d: number) {
 export function Board({ state, onChange, disabled }: Props) {
   const [sel, setSel] = useState<number | null>(null);
   const [op, setOp] = useState<Operator | null>(null);
+  /** The selection is a card that was just made (selected for you, not by a tap). */
+  const [fresh, setFresh] = useState(false);
+  /** A card to shake: ÷0. */
+  const [bad, setBad] = useState<number | null>(null);
   const solved = isSolved(state);
+  const left = state.cards.filter(Boolean).length;
+  const wrong = left === 1 && !solved;
   const locked = disabled || solved;
+
+  const shake = (slot: number) => {
+    setBad(slot);
+    setTimeout(() => setBad(null), 300);
+  };
 
   const pick = (slot: number) => {
     if (locked || !state.cards[slot]) return;
+    const wasFresh = fresh;
+    setFresh(false);
     if (sel === null || sel === slot) {
-      // Tapping the selected card again cancels the operator, then the selection.
+      // Tapping the card you just made keeps it (people tap it to start the next move).
+      // Otherwise tapping the selected card cancels the operator, then the selection.
       if (sel === slot && op) setOp(null);
+      else if (sel === slot && wasFresh) return;
       else setSel(sel === slot ? null : slot);
       return;
     }
@@ -59,15 +76,18 @@ export function Board({ state, onChange, disabled }: Props) {
     const next = combine(state, sel, slot, op);
     setOp(null);
     if (!next) {
-      setSel(null); // ÷0
+      setSel(null);
+      shake(slot); // ÷0
       return;
     }
     setSel(slot);
+    setFresh(true);
     onChange(next);
   };
 
   const chooseOp = (o: Operator) => {
     if (locked || sel === null) return;
+    setFresh(false);
     setOp(op === o ? null : o);
   };
 
@@ -76,20 +96,24 @@ export function Board({ state, onChange, disabled }: Props) {
     onChange(undo(state));
     setSel(null);
     setOp(null);
+    setFresh(false);
   };
 
   const keyRef = useRef<(e: KeyboardEvent) => void>(() => {});
   keyRef.current = (e) => {
     if (disabled || e.metaKey || e.ctrlKey || e.altKey || e.target instanceof HTMLInputElement) return;
     const k = e.key.toLowerCase();
-    if (k in KEY_TO_SLOT) pick(KEY_TO_SLOT[k]);
-    else if (KEY_TO_OP[k]) {
+    const isUndo = k === ' ' || k === 'backspace' || k === 'delete';
+    if (isUndo) e.preventDefault();
+    // Holding a key must not repeat a move (holding undo may unwind).
+    if (e.repeat && !isUndo) return;
+    const slot = e.shiftKey ? undefined : CODE_TO_SLOT[e.code];
+    const o = KEY_TO_OP[e.key] ?? (e.shiftKey ? undefined : CODE_TO_OP[e.code]);
+    if (slot !== undefined) pick(slot);
+    else if (o) {
       e.preventDefault();
-      chooseOp(KEY_TO_OP[k]);
-    } else if (k === ' ' || k === 'backspace' || k === 'delete') {
-      e.preventDefault();
-      back();
-    }
+      chooseOp(o);
+    } else if (isUndo) back();
     else if (k === 'escape') {
       setSel(null);
       setOp(null);
@@ -109,7 +133,7 @@ export function Board({ state, onChange, disabled }: Props) {
   };
 
   return (
-    <div className={`board ${solved ? 'is-solved' : ''}`}>
+    <div className={`board ${solved ? 'is-solved' : ''} ${wrong ? 'is-wrong' : ''}`}>
       <div className="cards">
         {state.cards.map((c, slot) => {
           if (!c) return <div key={`empty-${slot}`} className="card is-empty" />;
@@ -118,7 +142,7 @@ export function Board({ state, onChange, disabled }: Props) {
             <button
               key={c.id}
               tabIndex={-1}
-              className={`card ${c.suit % 2 ? 'is-red' : ''} ${sel === slot ? 'is-selected' : ''} ${sizeClass(n, d)}`}
+              className={`card ${c.suit % 2 ? 'is-red' : ''} ${sel === slot ? 'is-selected' : ''} ${bad === slot ? 'is-bad' : ''} ${sizeClass(n, d)}`}
               style={tilt(c.id)}
               onPointerDown={press(() => pick(slot))}
             >
@@ -153,7 +177,7 @@ export function Board({ state, onChange, disabled }: Props) {
         ))}
         <button
           tabIndex={-1}
-          className="op op-undo"
+          className={`op op-undo ${wrong ? 'is-hint' : ''}`}
           onPointerDown={press(back)}
           disabled={state.past.length === 0 || disabled}
           aria-label="undo"
